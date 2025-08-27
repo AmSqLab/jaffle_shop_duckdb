@@ -31,6 +31,10 @@ models:
 
   - name: orders
     description: This table has basic information about orders, as well as some derived facts based on payments
+    data_tests:
+      - dbt_utils.equal_rowcount:
+          arguments:
+            compare_model: ref('stg_orders') # sq
 
     columns:
       - name: order_id
@@ -44,8 +48,9 @@ models:
         data_tests:
           - not_null
           - relationships:
-              to: ref('customers')
-              field: customer_id
+              arguments:
+                to: ref('customers')
+                field: customer_id
 
       - name: order_date
         description: Date (UTC) that the order was placed
@@ -54,7 +59,8 @@ models:
         description: '{{ doc("orders_status") }}'
         data_tests:
           - accepted_values:
-              values: ['placed', 'shipped', 'completed', 'return_pending', 'returned']
+              arguments:
+                values: ['placed', 'shipped', 'completed', 'return_pending', 'returned']
 
       - name: amount
         description: Total amount (AUD) of the order
