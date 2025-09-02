@@ -11,3 +11,5 @@ venv/
 env/
 **/*.duckdb
 **/*.duckdb.wal
+jaffle_shop
+demo_dev
