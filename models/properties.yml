@@ -111,7 +111,8 @@ models:
     data_tests:
       # Demo: Compare with staging data (referential integrity)
       - dbt_utils.equal_rowcount:
-          compare_model: ref('stg_orders')
+          arguments:
+            compare_model: ref('stg_orders')
       - dbt_expectations.expect_table_row_count_to_equal_other_table:
           arguments:
             compare_model: ref("stg_orders")

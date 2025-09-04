@@ -33,3 +33,6 @@ models:
 flags:
   require_generic_test_arguments_property: true
 
+
+vars:
+  high_value_threshold: 100
