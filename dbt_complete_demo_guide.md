@@ -47,20 +47,20 @@ echo "SELECT customer_segment, activity_level, COUNT(*)
 │   │   ├── stg_customers.sql
 │   │   ├── stg_orders.sql 
 │   │   └── stg_payments.sql
-│   ├── ⚙️ intermediate/     # 業務邏輯層
-│   │   ├── int_customer_metrics.sql    # 綜合客戶指標分析
-│   │   ├── int_order_analytics.sql     # 訂單層級分析
-│   │   └── int_customer_summary.sql    # 簡化客戶摘要
-│   ├── 🏪 customers.sql     # 增強客戶分析模型
-│   ├── 🏪 orders.sql        # 進階訂單模型
+│   ├── 🏪 customers.sql     # 增強客戶分析模型 (完整業務邏輯)
+│   ├── 🏪 orders.sql        # 進階訂單模型 (動態欄位生成)
 │   └── properties.yml       # 🛡️ 豐富的 dbt_expectations 測試
 └── 📋 demo_checklist.md     # 演示檢查清單
 ```
 
 ### 分層設計原則
 - **Staging Layer**: 資料清理和標準化，保持與來源資料的 1:1 對應
-- **Intermediate Layer**: 業務邏輯模組化，可重用的轉換和計算
-- **Final Models**: 最終業務模型 (customers.sql, orders.sql)，面向終端用戶和分析師
+- **Mart Layer**: 最終業務模型 (customers.sql, orders.sql)，整合完整業務邏輯，面向終端用戶和分析師
+
+**🎯 Demo 架構優勢**：
+- **簡潔明確**: 兩層架構易於理解，專注核心概念
+- **功能完整**: customers.sql 和 orders.sql 直接展示所有進階功能
+- **沈浸式學習**: 觀眾可快速看到從原始資料到業務洞察的轉換
 
 ## 🔧 核心技術展示
 
