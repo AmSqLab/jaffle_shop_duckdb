@@ -1,10 +1,7 @@
 {{ 
   config(
     materialized='table',
-    indexes=[
-      {'columns': ['customer_id'], 'unique': true},
-      {'columns': ['customer_segment']}
-    ]
+    unique_key='customer_id'
   ) 
 }}
 
