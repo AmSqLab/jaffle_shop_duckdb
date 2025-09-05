@@ -43,6 +43,15 @@ models:
               arguments:
                 min_value: 3
                 max_value: 50
+                # max_value: 10
+                # max_value: 5
+              # Demo: 模擬錯誤的資料量
+              config:
+                severity: error
+                error_if: ">50"
+                warn_if: ">10"
+                limit: 11
+
 
       - name: first_name
         description: Customer's first name. PII.

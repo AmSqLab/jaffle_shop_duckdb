@@ -50,6 +50,11 @@ echo "SELECT customer_segment, activity_level, COUNT(*)
 │   ├── 🏪 customers.sql     # 增強客戶分析模型 (完整業務邏輯)
 │   ├── 🏪 orders.sql        # 進階訂單模型 (動態欄位生成)
 │   └── properties.yml       # 🛡️ 豐富的 dbt_expectations 測試
+├── 📁 target/               # 🔍 dbt 執行結果與編譯檔案
+│   ├── compiled/            # 編譯後的純 SQL 檔案
+│   ├── run/                 # 實際執行的 SQL 檔案
+│   ├── manifest.json        # 完整專案依賴圖與 metadata
+│   └── run_results.json     # 執行結果與效能統計
 └── 📋 demo_checklist.md     # 演示檢查清單
 ```
 
@@ -61,6 +66,67 @@ echo "SELECT customer_segment, activity_level, COUNT(*)
 - **簡潔明確**: 兩層架構易於理解，專注核心概念
 - **功能完整**: customers.sql 和 orders.sql 直接展示所有進階功能
 - **沈浸式學習**: 觀眾可快速看到從原始資料到業務洞察的轉換
+
+### 🔍 dbt 執行結果檢視：target/ 目錄詳解
+
+**target/** 目錄是 dbt 的工作區域，包含所有編譯和執行結果：
+
+#### 📂 **target/compiled/** - 編譯後的 SQL
+```bash
+# 查看 Jinja 模板編譯後的純 SQL
+cat target/compiled/jaffle_shop/models/customers.sql
+
+# 範例：Jinja 模板
+# {% set payment_methods = dbt_utils.get_column_values(...) %}
+# 編譯後變成：
+# -- payment_methods: ['credit_card', 'bank_transfer', 'coupon', 'gift_card']
+```
+
+#### 🚀 **target/run/** - 實際執行的 SQL
+```bash
+# 查看資料庫實際執行的 SQL 語句
+cat target/run/jaffle_shop/models/customers.sql
+
+# 包含完整的 CREATE TABLE 或 CREATE VIEW 語句
+# 以及所有 dbt 自動生成的 metadata
+```
+
+#### 📊 **target/manifest.json** - 專案完整 Metadata
+```bash
+# 包含所有模型的依賴關係、欄位資訊、測試定義
+# 血緣圖的資料來源
+jq '.nodes | keys' target/manifest.json
+```
+
+#### ⏱️ **target/run_results.json** - 執行效能統計
+```bash
+# 查看最近一次執行的詳細結果
+jq '.results[] | {name: .unique_id, status: .status, execution_time: .execution_time}' target/run_results.json
+
+# 範例輸出：
+# {
+#   "name": "model.jaffle_shop.customers",
+#   "status": "success", 
+#   "execution_time": 0.234
+# }
+```
+
+#### 🎯 **Demo 展示重點**：
+```bash
+# 1. 展示 Jinja 模板的威力
+echo "🔍 查看 Jinja 編譯前後對比..."
+head -20 models/customers.sql
+echo "--- 編譯後的純 SQL ---"
+head -50 target/compiled/jaffle_shop/models/customers.sql
+
+# 2. 展示實際執行的 SQL
+echo "🚀 查看資料庫實際執行的 SQL..."
+head -30 target/run/jaffle_shop/models/customers.sql
+
+# 3. 展示執行效能統計
+echo "⏱️ 查看執行效能..."
+jq '.results[] | select(.unique_id | contains("customers")) | {status, execution_time}' target/run_results.json
+```
 
 ## 🔧 核心技術展示
 

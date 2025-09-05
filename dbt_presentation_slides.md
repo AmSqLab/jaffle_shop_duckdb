@@ -135,18 +135,22 @@ marp: true
 │   │   ├── stg_customers.sql
 │   │   ├── stg_orders.sql 
 │   │   └── stg_payments.sql
-│   ├── ⚙️ intermediate/     # 🔶 業務邏輯層
-│   │   ├── int_customer_metrics.sql
-│   │   └── int_order_analytics.sql
-│   ├── 🏪 customers.sql     # 🔺 最終業務模型
-│   └── 🏪 orders.sql
+│   ├── 🏪 customers.sql     # 🔺 最終業務模型 (完整業務邏輯)
+│   └── 🏪 orders.sql        # 🔺 進階訂單模型 (動態欄位生成)
+├── 📁 target/               # 🔍 dbt 執行結果與編譯檔案
+│   ├── compiled/            # 編譯後的純 SQL 檔案
+│   └── run/                 # 實際執行的 SQL 檔案
 ```
 
 ### 📐 設計原則
 
-- **🧹 Staging**: 1:1 資料清理與標準化
-- **⚙️ Intermediate**: 可重用業務邏輯模組
-- **🏪 Final Models**: 面向業務用戶的分析模型
+- **🧹 Staging**: 資料清理和標準化，保持與來源資料的 1:1 對應
+- **🏪 Mart Layer**: 最終業務模型，整合完整業務邏輯，面向終端用戶和分析師
+
+**🎯 Demo 架構優勢**：
+- **簡潔明確**: 兩層架構易於理解，專注核心概念
+- **功能完整**: customers.sql 和 orders.sql 直接展示所有進階功能
+- **沈浸式學習**: 觀眾可快速看到從原始資料到業務洞察的轉換
 
 ---
 
@@ -186,7 +190,7 @@ sum(case when payment_method = '{{ payment_method }}'
 ### ⚙️ 可配置業務邏輯
 
 ```sql
-{% set high_value_threshold = var('high_value_threshold', 100) %}
+{% set high_value_threshold = var('high_value_threshold', 25) %}
 
 case
     when sum(amount) >= {{ high_value_threshold }} then 'High Value'
@@ -207,7 +211,7 @@ end as order_value_category
 
 **⚡ 執行時調整參數**:
 ```bash
-dbt run --vars '{"high_value_threshold": 150}'
+dbt run --vars '{"high_value_threshold": 30}'
 ```
 
 ---
@@ -301,9 +305,9 @@ FROM customers
 
 ### 🔍 客戶分段邏輯
 
-- **High Value** (≥$200): VIP 客戶，重點維護
-- **Medium Value** ($100-199): 成長潛力客戶  
-- **Low Value** ($1-99): 基礎客戶群
+- **High Value** (≥$60): VIP 客戶，重點維護
+- **Medium Value** ($30-59): 成長潛力客戶  
+- **Low Value** ($1-29): 基礎客戶群
 - **No Purchase** ($0): 待激活用戶
 
 ---
@@ -380,7 +384,7 @@ FROM customers
 
 5. **🎨 參數調整** (即時效果)
    ```bash
-   dbt run --vars '{"high_value_threshold": 150}'
+   dbt run --vars '{"high_value_threshold": 30}'
    ```
 
 ---
