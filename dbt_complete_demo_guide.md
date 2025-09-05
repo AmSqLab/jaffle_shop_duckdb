@@ -68,9 +68,10 @@ echo "SELECT customer_segment, activity_level, COUNT(*)
 | 工具 | 用途 | Demo 價值 |
 |------|------|-----------|
 | **dbt-utils** | 動態 SQL 生成 | `get_column_values()`, `generate_surrogate_key()` |
-| **dbt-expectations** | 進階資料品質測試 | 40+ 業務規則驗證 |
+| **dbt-expectations** | 進階資料品質測試 | 50+ 業務規則驗證 |
 | **Jinja** | 模板化 SQL | 可配置業務邏輯 |
 | **DuckDB** | 高效本地分析 | 秒級執行，即時反饋 |
+| **unique_key** | 主鍵約束 | 資料唯一性保證，incremental 模型基礎 |
 
 ### 1. dbt_utils 函數應用
 
@@ -132,7 +133,7 @@ data_tests:
 **測試覆蓋率**：大量自動化測試
 ```bash
 dbt test --select customers orders
-# 結果：大量測試通過 WARN=0 ERROR=0
+# 結果：50+ 測試通過 WARN=0 ERROR=0
 ```
 
 **關鍵測試類型**：
@@ -304,9 +305,16 @@ dbt test --select test_type:unit
 `customers` 表是本 demo 的明星展示，包含了所有核心技術的應用：
 
 ```sql
+-- 配置：使用 unique_key 確保資料唯一性
+{{ config(
+    materialized='table',
+    unique_key='customer_id'
+) }}
+
 -- 展示完整的客戶 360 度視圖
 SELECT 
     customer_id,
+    customer_business_key,  -- dbt_utils 生成的業務代理鍵
     full_name,
     
     -- 💰 價值分析
@@ -335,9 +343,9 @@ LIMIT 10;
 ### 關鍵業務洞察
 
 **客戶分段邏輯**：
-- **High Value** (≥$200): VIP 客戶，重點維護
-- **Medium Value** ($100-199): 成長潛力客戶  
-- **Low Value** ($1-99): 基礎客戶群
+- **High Value** (≥$60): VIP 客戶，重點維護
+- **Medium Value** ($30-59): 成長潛力客戶  
+- **Low Value** ($1-29): 基礎客戶群
 - **No Purchase** ($0): 待激活用戶
 
 **流失風險模型**：
@@ -405,16 +413,17 @@ ORDER BY avg_days_inactive DESC;
 
 執行完整測試套件：
 ```bash
-dbt test --select customers
+dbt test --select customers orders
 ```
 
 **測試覆蓋範圍**：
-- ✅ **唯一性檢查**：customer_id, customer_business_key
+- ✅ **唯一性檢查**：customer_id, customer_business_key, order_id, order_business_key
 - ✅ **完整性檢查**：所有必要欄位 not_null
 - ✅ **範圍驗證**：number_of_orders (0-10)
-- ✅ **分類驗證**：customer_segment 只能是預定義值
-- ✅ **業務邏輯**：return_rate_percent 在 0-100% 之間
+- ✅ **分類驗證**：customer_segment, activity_level, churn_risk 只能是預定義值
+- ✅ **業務邏輯**：order_value_category 分類正確
 - ✅ **字串格式**：full_name 長度 3-50 字元
+- ✅ **關聯完整性**：orders.customer_id 必須存在於 customers 表中
 
 ## 🎬 互動展示腳本
 
@@ -485,8 +494,13 @@ echo "✅ Unit Tests 完成 - 金額轉換邏輯驗證通過！"
 # 4. 執行完整測試套件 (資料品質測試)
 echo "🛡️ 執行完整資料品質測試..."
 dbt test
+echo "✅ 50+ 測試全部通過！"
 
-# 5. 展示智能客戶分析
+# 5. 展示 unique_key 配置效果
+echo "🔑 展示主鍵唯一性約束..."
+echo "SELECT COUNT(*) as total_customers, COUNT(DISTINCT customer_id) as unique_customers FROM customers;" | duckcli jaffle_shop.duckdb
+
+# 6. 展示智能客戶分析
 echo "📊 展示客戶分析結果..."
 echo "
 SELECT 
@@ -494,7 +508,7 @@ SELECT
     activity_level,
     churn_risk,
     COUNT(*) as customers,
-    AVG(customer_lifetime_value) as avg_clv
+    ROUND(AVG(customer_lifetime_value), 2) as avg_clv
 FROM customers 
 WHERE customer_segment != 'No Purchase'
 GROUP BY 1,2,3
@@ -587,9 +601,10 @@ cat target/compiled/jaffle_shop/models/problematic_model.sql
 
 ### 技術指標
 - ✅ 3 秒內完成完整 pipeline 重建
-- ✅ 完整測試套件 100% 通過率
-- ✅ 3 層架構清晰分離
+- ✅ 完整測試套件 100% 通過率 (50+ 測試)
+- ✅ 2 層架構清晰分離 (staging → mart)
 - ✅ 動態欄位正確生成 (4 個付款方式欄位)
+- ✅ unique_key 配置確保資料唯一性
 
 ### 業務價值
 - ✅ 客戶細分自動化

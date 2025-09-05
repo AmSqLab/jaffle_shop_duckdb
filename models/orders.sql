@@ -17,7 +17,7 @@
 {% set payment_methods = dbt_utils.get_column_values(ref('stg_payments'), 'payment_method') %}
 
 -- Demo：可配置的商業門檻值
-{% set high_value_threshold = var('high_value_threshold', 100) %}
+{% set high_value_threshold = var('high_value_threshold', 10) %}
 
 with orders as (
 

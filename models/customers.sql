@@ -90,10 +90,10 @@ customer_segments as (
         -- Demo: Generate business surrogate key
         {{ dbt_utils.generate_surrogate_key(['customer_id', 'first_order']) }} as customer_business_key,
         
-        -- Demo: Customer value segmentation
+        -- Demo: Customer value segmentation (adjusted for realistic demo data)
         case 
-            when customer_lifetime_value >= 200 then 'High Value'
-            when customer_lifetime_value >= 100 then 'Medium Value'
+            when customer_lifetime_value >= 60 then 'High Value'
+            when customer_lifetime_value >= 30 then 'Medium Value'
             when customer_lifetime_value > 0 then 'Low Value'
             else 'No Purchase'
         end as customer_segment,

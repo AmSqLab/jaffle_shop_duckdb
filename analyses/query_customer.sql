@@ -1,6 +1,12 @@
 -- Customer Behavior Analysis: Exploratory Query
 -- This analysis is used to analyze customer purchase behavior patterns and trends
 -- Unlike the customers model, this is an ad-hoc query for exploratory analysis
+-- 
+-- Note: Customer segmentation thresholds aligned with customers.sql model:
+-- - High Value: ≥$60 (VIP customers, top tier)
+-- - Medium Value: $30-59 (growth potential customers)  
+-- - Low Value: $1-29 (basic customer segment)
+-- - No Purchase: $0 (inactive users)
 
 with customers as (
 
@@ -53,16 +59,17 @@ customer_payment_preferences as (
 
 ),
 
--- Customer value tier analysis
+-- Customer value tier analysis (aligned with customers.sql segmentation)
 customer_value_tiers as (
 
     select
         customer_id,
         sum(amount) as total_spent,
         case 
-            when sum(amount) >= 1000 then 'High Value Customer'
-            when sum(amount) >= 500 then 'Medium Value Customer'
-            else 'Low Value Customer'
+            when sum(amount) >= 60 then 'High Value Customer'
+            when sum(amount) >= 30 then 'Medium Value Customer'
+            when sum(amount) > 0 then 'Low Value Customer'
+            else 'No Purchase Customer'
         end as customer_tier
     from payments
     left join orders on payments.order_id = orders.order_id
@@ -125,12 +132,15 @@ select
     customer_tier,
     activity_level,
     days_since_last_order,
-    -- Risk assessment: High-value customers who haven't purchased recently
+    -- Risk assessment: High-value customers who haven't purchased recently (aligned with customers.sql)
     case 
-        when customer_tier = 'High Value Customer' and days_since_last_order > 90 then 'Churn Risk'
-        when customer_tier = 'Medium Value Customer' and days_since_last_order > 60 then 'Churn Risk'
-        when days_since_last_order > 30 then 'Needs Attention'
-        else 'Normal'
+        when customer_tier = 'High Value Customer' and days_since_last_order > 365 then 'High Churn Risk'
+        when customer_tier = 'High Value Customer' and days_since_last_order > 180 then 'Medium Churn Risk'
+        when customer_tier = 'High Value Customer' and days_since_last_order > 90 then 'Low Churn Risk'
+        when customer_tier = 'Medium Value Customer' and days_since_last_order > 180 then 'Medium Churn Risk'
+        when customer_tier = 'Medium Value Customer' and days_since_last_order > 90 then 'Low Churn Risk'
+        when days_since_last_order > 90 then 'Low Churn Risk'
+        else 'Active'
     end as retention_risk
 from customer_activity_analysis
 order by total_spent desc, days_since_last_order asc
