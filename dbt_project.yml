@@ -35,4 +35,4 @@ flags:
 
 
 vars:
-  high_value_threshold: 100
+  high_value_threshold: 25

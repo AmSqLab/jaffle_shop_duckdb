@@ -16,8 +16,8 @@
 -- Demo：從源資料動態取得付款方式
 {% set payment_methods = dbt_utils.get_column_values(ref('stg_payments'), 'payment_method') %}
 
--- Demo：可配置的商業門檻值
-{% set high_value_threshold = var('high_value_threshold', 10) %}
+-- Demo：可配置的商業門檻值 (aligned with customer segmentation)
+{% set high_value_threshold = var('high_value_threshold', 25) %}
 
 with orders as (
 

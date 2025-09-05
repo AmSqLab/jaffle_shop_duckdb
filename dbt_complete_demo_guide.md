@@ -97,7 +97,7 @@ sum(case when payment_method = '{{ payment_method }}' then amount else 0 end) as
 
 **可配置業務邏輯**：
 ```sql
-{% set high_value_threshold = var('high_value_threshold', 100) %}
+{% set high_value_threshold = var('high_value_threshold', 25) %}
 
 case
     when sum(amount) >= {{ high_value_threshold }} then 'High Value'
@@ -373,9 +373,9 @@ ORDER BY avg_value DESC;
 ```
 
 **預期結果**：
-- High Value: customer_lifetime_value >= 200
-- Medium Value: 100 <= customer_lifetime_value < 200  
-- Low Value: 0 < customer_lifetime_value < 100
+- High Value: customer_lifetime_value >= 60
+- Medium Value: 30 <= customer_lifetime_value < 60  
+- Low Value: 0 < customer_lifetime_value < 30
 - No Purchase: customer_lifetime_value = 0
 
 #### 2. 活躍度分析準確性
@@ -429,8 +429,8 @@ dbt test --select customers orders
 
 ### 場景一：即時參數調整
 ```bash
-# 調整高價值門檻為 $150
-dbt run --vars '{"high_value_threshold": 150}'
+# 調整高價值門檻為 $30
+dbt run --vars '{"high_value_threshold": 30}'
 
 # 查看訂單分類變化
 echo "SELECT order_value_category, COUNT(*), AVG(amount) 
@@ -546,15 +546,15 @@ ORDER BY avg_clv DESC;
 在 `dbt_project.yml` 或執行時設定：
 ```yaml
 vars:
-  high_value_threshold: 100
+  high_value_threshold: 25
   include_payment_breakdown: true
   minimum_order_amount: 10
 ```
 
 ### 選擇性執行
 ```bash
-# 只執行 intermediate 層
-dbt run --select intermediate
+# 只執行 staging 層
+dbt run --select staging
 
 # 執行特定模型及其下游
 dbt run --select customers+
