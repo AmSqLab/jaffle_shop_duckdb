@@ -1,0 +1,85 @@
+version: 2
+
+models:
+  - name: stg_customers
+    columns:
+      - name: customer_id
+        data_tests:
+          - unique
+          - not_null
+
+  - name: stg_orders
+    columns:
+      - name: order_id
+        data_tests:
+          - unique
+          - not_null
+      - name: status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['placed', 'shipped', 'completed', 'return_pending', 'returned']
+
+  - name: stg_payments
+    description: |
+      🎯 Demo：Unit Testing 展示模型
+      將付款資料從分轉換為元，並進行基本欄位重命名。
+      
+      此模型展示：
+      - 金額單位轉換邏輯 (分 → 元)
+      - 欄位標準化重命名
+      - 簡單但關鍵的資料轉換
+    
+    columns:
+      - name: payment_id
+        description: 付款記錄唯一識別碼
+        data_tests:
+          - unique
+          - not_null
+      - name: payment_method
+        description: 付款方式
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['credit_card', 'coupon', 'bank_transfer', 'gift_card']
+      - name: amount
+        description: 付款金額（以元為單位）
+        data_tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+                max_value: 1000
+
+unit_tests:
+  - name: test_stg_payments_amount_conversion
+    description: |
+      🧪 Demo Unit Test：測試金額轉換邏輯
+      驗證付款金額從分正確轉換為元
+    model: stg_payments
+    given:
+      - input: ref('raw_payments')
+        rows:
+          - {id: 1, order_id: 101, payment_method: 'credit_card', amount: 1500}  # 15.00 元
+          - {id: 2, order_id: 102, payment_method: 'bank_transfer', amount: 2000}  # 20.00 元
+          - {id: 3, order_id: 103, payment_method: 'gift_card', amount: 500}   # 5.00 元
+    expect:
+      rows:
+        - {payment_id: 1, order_id: 101, payment_method: 'credit_card', amount: 15.0}
+        - {payment_id: 2, order_id: 102, payment_method: 'bank_transfer', amount: 20.0}
+        - {payment_id: 3, order_id: 103, payment_method: 'gift_card', amount: 5.0}
+
+  - name: test_stg_payments_edge_cases
+    description: |
+      🧪 Demo Unit Test：測試邊界情況
+      驗證零金額和大金額的處理
+    model: stg_payments
+    given:
+      - input: ref('raw_payments')
+        rows:
+          - {id: 10, order_id: 201, payment_method: 'coupon', amount: 0}      # 0.00 元
+          - {id: 11, order_id: 202, payment_method: 'credit_card', amount: 999999}  # 9999.99 元
+    expect:
+      rows:
+        - {payment_id: 10, order_id: 201, payment_method: 'coupon', amount: 0.0}
+        - {payment_id: 11, order_id: 202, payment_method: 'credit_card', amount: 9999.99}

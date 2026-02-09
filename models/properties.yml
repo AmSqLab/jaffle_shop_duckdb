@@ -1,0 +1,205 @@
+version: 2
+
+models:
+  - name: customers
+    description: |
+      此表包含完整的客戶資訊，包括：
+      - 基本客戶資料 (姓名、識別碼)
+      - 訂單行為與模式分析
+      - 客戶分群與風險分析
+      - 付款偏好設定
+      
+      **🎯 Demo 特色**：展示 dbt_utils 函數、商業分群邏輯，
+      以及用於 dbt 演示的進階客戶分析功能。
+    
+    data_tests:
+      # Demo：表層級 dbt_expectations 測試
+      - dbt_expectations.expect_table_row_count_to_be_between:
+          arguments:
+            min_value: 90
+            max_value: 110
+
+    columns:
+      - name: customer_id
+        description: 主鍵 - 每位客戶的唯一識別碼
+        data_tests:
+          - unique
+          - not_null
+          # Demo：進階唯一性測試
+          - dbt_expectations.expect_column_values_to_be_unique
+
+      - name: customer_business_key
+        description: Business surrogate key generated using dbt_utils.generate_surrogate_key
+        data_tests:
+          - not_null
+          - unique
+
+      - name: full_name
+        description: Concatenated customer full name (first + last)
+        data_tests:
+          - not_null
+          # Demo: String length validation
+          - dbt_expectations.expect_column_value_lengths_to_be_between:
+              arguments:
+                min_value: 3
+                max_value: 50
+                # max_value: 10
+                # max_value: 5
+              # Demo: 模擬錯誤的資料量
+              config:
+                severity: error
+                error_if: ">50"
+                warn_if: ">10"
+                limit: 11
+
+
+      - name: first_name
+        description: Customer's first name. PII.
+        data_tests:
+          - not_null
+
+      - name: last_name
+        description: Customer's last name. PII.
+        data_tests:
+          - not_null
+
+      - name: first_order
+        description: Date (UTC) of customer's first order
+
+      - name: most_recent_order
+        description: Date (UTC) of customer's most recent order
+
+      - name: number_of_orders
+        description: Count of orders placed by customer
+        data_tests:
+          - not_null
+          # Demo: Range validation for business metrics
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+                max_value: 10
+
+      - name: customer_lifetime_value
+        description: Total value (AUD) of all customer orders
+        data_tests:
+          - not_null
+
+      - name: customer_segment
+        description: Customer value segmentation (High/Medium/Low Value, No Purchase)
+        data_tests:
+          - not_null
+          # Demo: Categorical value validation
+          - dbt_expectations.expect_column_values_to_be_in_set:
+              arguments:
+                value_set: ['High Value', 'Medium Value', 'Low Value', 'No Purchase']
+
+      - name: activity_level
+        description: Customer activity classification based on order frequency
+        data_tests:
+          - not_null
+          # Demo: Business category validation  
+          - dbt_expectations.expect_column_values_to_be_in_set:
+              arguments:
+                value_set: ['Very Active', 'Active', 'Regular', 'Occasional', 'Inactive']
+
+      - name: churn_risk
+        description: Customer churn risk assessment based on recency
+        data_tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_in_set:
+              arguments:
+                value_set: ['Active', 'Low Churn Risk', 'Medium Churn Risk', 'High Churn Risk']
+
+  - name: orders
+    description: |
+      Enhanced orders table with dynamic payment breakdowns and business classifications.
+      
+      **🎯 Demo Features**: Showcases advanced Jinja macros, dynamic column generation,
+      configurable business logic, and dbt_utils surrogate keys.
+    
+    data_tests:
+      # Demo: Compare with staging data (referential integrity)
+      - dbt_utils.equal_rowcount:
+          arguments:
+            compare_model: ref('stg_orders')
+      - dbt_expectations.expect_table_row_count_to_equal_other_table:
+          arguments:
+            compare_model: ref("stg_orders")
+      # Demo: Table-level business rules
+      - dbt_expectations.expect_table_row_count_to_be_between:
+          arguments:
+            min_value: 90
+            max_value: 110
+
+    columns:
+      - name: order_id
+        description: Primary key - unique identifier for each order
+        data_tests:
+          - unique
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_unique
+
+      - name: customer_id
+        description: Foreign key linking to customers table
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('customers')
+                field: customer_id
+
+      - name: order_date
+        description: Date (UTC) when the order was placed
+        data_tests:
+          - not_null
+
+      - name: status
+        description: Current order status - tracking fulfillment lifecycle
+        data_tests:
+          - not_null
+          # Demo: Status validation using dbt_expectations
+          - dbt_expectations.expect_column_values_to_be_in_set:
+              arguments:
+                value_set: ['placed', 'shipped', 'completed', 'return_pending', 'returned']
+
+      - name: amount
+        description: Total order amount (AUD) - sum of all payments
+        data_tests:
+          - not_null
+
+      - name: order_value_category
+        description: Business classification (Standard/High Value) - generated by Jinja logic
+        data_tests:
+          - not_null
+          # Demo: Business category validation
+          - dbt_expectations.expect_column_values_to_be_in_set:
+              arguments:
+                value_set: ['Standard', 'High Value']
+
+      - name: order_business_key
+        description: Business surrogate key generated using dbt_utils.generate_surrogate_key
+        data_tests:
+          - not_null
+          - unique
+
+      # Demo: Dynamic payment method columns (generated by Jinja loops)
+      - name: credit_card_amount
+        description: Amount paid via credit card (auto-generated by Jinja loop)
+        data_tests:
+          - not_null
+
+      - name: bank_transfer_amount
+        description: Amount paid via bank transfer (auto-generated by Jinja loop)  
+        data_tests:
+          - not_null
+
+      - name: coupon_amount
+        description: Amount paid via coupon (auto-generated by Jinja loop)
+        data_tests:
+          - not_null
+
+      - name: gift_card_amount
+        description: Amount paid via gift card (auto-generated by Jinja loop)
+        data_tests:
+          - not_null
+
